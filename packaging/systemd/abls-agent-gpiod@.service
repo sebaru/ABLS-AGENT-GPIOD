@@ -1,0 +1,17 @@
+[Unit]
+Description=ABLS Agent GPIOD (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/abls-agent-gpiod --agent-tech-id=%i
+DynamicUser=yes
+SupplementaryGroups=abls
+StateDirectory=abls-agent-gpiod/%i
+WorkingDirectory=%S/abls-agent-gpiod/%i
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
