@@ -53,7 +53,7 @@
  static void Charger_un_gpio ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { gint num = Json_get_int ( element, "num" );
     if (num < 0 || num >= Agent_vars->num_lines)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "%s: num %d is out of range (0..%d)",
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "%s: num %d is out of range (0..%d)",
              Json_get_string ( element, "agent_acronyme" ), num, Agent_vars->num_lines - 1 );
        return;
      }
@@ -62,13 +62,13 @@
     Agent_vars->lignes[num].element = element;
     Agent_vars->lignes[num].mode_inout = Json_get_int ( element, "mode_inout" );
     Agent_vars->lignes[num].mode_activelow = Json_get_int ( element, "mode_activelow" );
-    Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO,
+    Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_INFO,
           "Chargement du GPIO%02d en mode_inout %d, mode_activelow=%d",
           num, Agent_vars->lignes[num].mode_inout, Agent_vars->lignes[num].mode_activelow );
 
     struct gpiod_line_settings *settings = gpiod_line_settings_new();
     if (!settings)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "GPIO%02d: gpiod_line_settings_new error", num );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_settings_new error", num );
        return;
      }
 
@@ -78,7 +78,7 @@
 
     struct gpiod_line_config *line_cfg = gpiod_line_config_new();
     if (!line_cfg)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "GPIO%02d: gpiod_line_config_new error", num );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_config_new error", num );
        Gpiod_release_line_resources ( NULL, NULL, settings );
        return;
      }
@@ -86,7 +86,7 @@
     unsigned int offset = num;
     gint ret = gpiod_line_config_add_line_settings ( line_cfg, &offset, 1, settings );
     if (ret)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "GPIO%02d: gpiod_line_config_add_line_settings error", num );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_config_add_line_settings error", num );
        Gpiod_release_line_resources ( NULL, line_cfg, settings );
        return;
      }
@@ -96,7 +96,7 @@
 
     Agent_vars->lignes[num].gpio_ligne = gpiod_chip_request_lines ( Agent_vars->chip, req_cfg, line_cfg );
     if (!Agent_vars->lignes[num].gpio_ligne)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "GPIO%02d: gpiod_chip_request_lines error", num );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_chip_request_lines error", num );
        Gpiod_release_line_resources ( req_cfg, line_cfg, settings );
        return;
      }
@@ -154,33 +154,33 @@
 /******************************************************************************************************************************/
  gint main ( gint argc, gchar *argv[] )
   { Agent = Agent_init ( argv[0], "gpiod", ABLS_AGENT_GPIOD_VERSION, sizeof(struct ABLS_GPIOD_VARS), argc, argv );
-    Agent_vars = Agent->vars;
+    Agent_vars = Agent_get_vars ( Agent );
 
     Agent_vars->chip = gpiod_chip_open ( "/dev/gpiochip0" );
     if (!Agent_vars->chip)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "Error while loading chip 'gpiochip0'" );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "Error while loading chip 'gpiochip0'" );
        Agent_end ( Agent );
      }
-    else Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Chip 'gpiochip0' loaded" );
+    else Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Chip 'gpiochip0' loaded" );
 
     struct gpiod_chip_info *info = gpiod_chip_get_info ( Agent_vars->chip );
     if (!info)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "gpiod_chip_get_info failed" );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "gpiod_chip_get_info failed" );
        Gpiod_cleanup();
        Agent_end ( Agent );
      }
 
-    Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "%s [%s] %d lines",
+    Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "%s [%s] %d lines",
           gpiod_chip_info_get_name(info), gpiod_chip_info_get_label(info), gpiod_chip_info_get_num_lines(info) );
     Agent_vars->num_lines = gpiod_chip_info_get_num_lines ( info );
     gpiod_chip_info_free ( info );
 
     if (Agent_vars->num_lines > GPIOD_MAX_LINE) Agent_vars->num_lines = GPIOD_MAX_LINE;
-    Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_INFO, "Found %d lines", Agent_vars->num_lines );
+    Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_INFO, "Found %d lines", Agent_vars->num_lines );
 
     JsonNode *RootNode = Json_create();
     if (RootNode)
-     { Json_add_string ( RootNode, "agent_tech_id", Agent->agent_tech_id );
+     { Json_add_string ( RootNode, "agent_tech_id", Agent_get_tech_id ( Agent ) );
        Json_add_int    ( RootNode, "nbr_lignes", Agent_vars->num_lines );
        JsonNode *API_result = Http_Post_to_global_API ( Agent, "/run/gpiod/add/io", RootNode );
        if (API_result) Json_unref ( API_result );
@@ -189,22 +189,22 @@
 
     Agent_vars->lignes = g_try_malloc0 ( sizeof(struct ABLS_GPIOD_LINE) * Agent_vars->num_lines );
     if (!Agent_vars->lignes)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ALERT, "Memory Error while loading lignes" );
+     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ALERT, "Memory Error while loading lignes" );
        Gpiod_cleanup();
        Agent_end ( Agent );
      }
 
-    Json_foreach_array_element ( Agent->api_config, "IO", Charger_un_gpio, Agent );
+    Agent_config_foreach_array_element ( Agent, "IO", Charger_un_gpio, Agent );
     Agent_send_comm_to_master ( Agent, TRUE );
     Agent_is_ready ( Agent );
 
-    while (Agent->Agent_run == AGENT_IS_RUNNING)
+    while (Agent_is_running ( Agent ))
      { Agent_loop ( Agent );
 
 /*+--------------------------------------------------------------Ecoute du master --------------------------------------------*/
        JsonNode *mqtt_local_message;
        while ( (mqtt_local_message = Agent_get_mqtt_local_message ( Agent ) ) != NULL )
-        { if (Mqtt_topic_is ( mqtt_local_message, 3, "SET_DO", Agent->agent_tech_id, "+" ))
+        { if (Mqtt_topic_is ( mqtt_local_message, 3, "SET_DO", Agent_get_tech_id ( Agent ), "+" ))
            { const gchar *msg_agent_acronyme = Mqtt_get_topic_lvl ( mqtt_local_message, 2 );
              gchar *msg_tech_id        = Json_get_string ( mqtt_local_message, "tech_id" );
              gchar *msg_acronyme       = Json_get_string ( mqtt_local_message, "acronyme" );
@@ -213,8 +213,8 @@
              for (gint num = 0; num < Agent_vars->num_lines; num++)
               { if ( Agent_vars->lignes[num].gpio_ligne && Agent_vars->lignes[num].mode_inout != 0 &&
                      !strcasecmp ( Json_get_string ( Agent_vars->lignes[num].element, "agent_acronyme" ), msg_agent_acronyme ) )
-                 { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "SET_DO '%s:%s'/'%s:%s'=%d",
-                         Agent->agent_tech_id, msg_agent_acronyme, msg_tech_id, msg_acronyme, etat );
+                 { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "SET_DO '%s:%s'/'%s:%s'=%d",
+                         Agent_get_tech_id ( Agent ), msg_agent_acronyme, msg_tech_id, msg_acronyme, etat );
                          Agent_vars->lignes[num].etat = etat;
                          Json_add_bool ( Agent_vars->lignes[num].element, "etat", etat );
                          gpiod_line_request_set_value ( Agent_vars->lignes[num].gpio_ligne, num, etat );
@@ -228,8 +228,8 @@
 /*+--------------------------------------------------------------Ecoute de l'API ---------------------------------------------*/
        JsonNode *mqtt_api_message;
        while ( (mqtt_api_message = Agent_get_mqtt_api_message ( Agent ) ) != NULL )
-        { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent->agent_tech_id, "TEST" ) )
-           { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_NOTICE, "Agent Test from API." ); }
+        { if ( Mqtt_topic_is ( mqtt_api_message, 4, "+", "AGENT", Agent_get_tech_id ( Agent ), "TEST" ) )
+           { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Agent Test from API." ); }
            /* Gpiod_sync_all_inputs(); a revoir : mettre ca dans agent-libs, basé sur le tableau "IOs" avec les classes DI/AI */
           Json_unref ( mqtt_api_message ); }
         }
