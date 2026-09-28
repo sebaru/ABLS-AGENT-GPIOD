@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* ABLS-AGENT-GPIOD/include/gpiod.h   Déclaration structure interne du module GPIOD                                          */
+/* ABLS-AGENT-GPIOD/include/abls-gpiod.h   Déclaration structure interne du module GPIOD                                     */
 /* Projet Abls-Habitat                   Gestion d'habitat                                                15.09.2026 12:00:00 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/

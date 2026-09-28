@@ -28,7 +28,7 @@
  #include <stdlib.h>
  #include <string.h>
 
- #include "gpiod.h"
+ #include "abls-gpiod.h"
 
  struct ABLS_AGENT *Agent = NULL;
  struct ABLS_GPIOD_VARS *Agent_vars = NULL;
@@ -52,9 +52,9 @@
 /******************************************************************************************************************************/
  static void Charger_un_gpio ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { gint num = Json_get_int ( element, "num" );
-    if (num >= Agent_vars->num_lines)
-     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "%s: num %d is out of range (>=%d)",
-             Json_get_string ( element, "agent_acronyme" ), num, Agent_vars->num_lines );
+    if (num < 0 || num >= Agent_vars->num_lines)
+     { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "%s: num %d is out of range (0..%d)",
+             Json_get_string ( element, "agent_acronyme" ), num, Agent_vars->num_lines - 1 );
        return;
      }
 
@@ -83,7 +83,8 @@
        return;
      }
 
-    gint ret = gpiod_line_config_add_line_settings ( line_cfg, &num, 1, settings );
+    unsigned int offset = num;
+    gint ret = gpiod_line_config_add_line_settings ( line_cfg, &offset, 1, settings );
     if (ret)
      { Info( __func__, Agent->agent_classe, Agent->agent_tech_id, LOG_ERR, "GPIO%02d: gpiod_line_config_add_line_settings error", num );
        Gpiod_release_line_resources ( NULL, line_cfg, settings );
@@ -114,6 +115,7 @@
      }
     Json_add_int ( element, "etat", Agent_vars->lignes[num].etat );
   }
+#ifdef bouh
 /******************************************************************************************************************************/
 /* Gpiod_sync_all_inputs: synchronise les états des entrées GPIO vers MQTT                                                    */
 /* Entrée: néant                                                                                                              */
@@ -127,6 +129,7 @@
         }
      }
   }
+#endif
 /******************************************************************************************************************************/
 /* Gpiod_cleanup: libère les lignes GPIO et les ressources de l'agent                                                         */
 /* Entrée: néant                                                                                                              */
@@ -202,7 +205,7 @@
        JsonNode *mqtt_local_message;
        while ( (mqtt_local_message = Agent_get_mqtt_local_message ( Agent ) ) != NULL )
         { if (Mqtt_topic_is ( mqtt_local_message, 3, "SET_DO", Agent->agent_tech_id, "+" ))
-           { gchar *msg_agent_acronyme = Mqtt_get_topic_lvl ( mqtt_local_message, 2 );
+           { const gchar *msg_agent_acronyme = Mqtt_get_topic_lvl ( mqtt_local_message, 2 );
              gchar *msg_tech_id        = Json_get_string ( mqtt_local_message, "tech_id" );
              gchar *msg_acronyme       = Json_get_string ( mqtt_local_message, "acronyme" );
              gboolean etat             = Json_get_bool ( mqtt_local_message, "etat" );

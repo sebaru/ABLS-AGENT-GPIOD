@@ -23,6 +23,8 @@ Supported GPIOD features:
 
 ## Build
 
+Requires libgpiod 2.x development headers (version 2.0 or newer).
+
 ```sh
 ./install_deps.sh
 ./build.sh

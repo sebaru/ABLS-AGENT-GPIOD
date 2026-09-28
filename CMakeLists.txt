@@ -30,7 +30,7 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
-pkg_check_modules(LIBGPIOD REQUIRED libgpiod)
+pkg_check_modules(LIBGPIOD REQUIRED libgpiod>=2.0)
 pkg_check_modules(ABLS_LIBS REQUIRED abls-libs)
 pkg_check_modules(ABLS_AGENT_LIBS REQUIRED abls-agent-libs)
 
