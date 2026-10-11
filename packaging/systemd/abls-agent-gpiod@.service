@@ -7,7 +7,7 @@ After=network-online.target
 Type=simple
 ExecStart=/usr/bin/abls-agent-gpiod --agent-tech-id=%i
 DynamicUser=yes
-SupplementaryGroups=abls
+SupplementaryGroups=abls gpio
 StateDirectory=abls-agent-gpiod/%i
 WorkingDirectory=%S/abls-agent-gpiod/%i
 Restart=on-failure

@@ -25,6 +25,7 @@
  * Boston, MA  02110-1301  USA
  */
 
+ #include <errno.h>
  #include <stdlib.h>
  #include <string.h>
 
@@ -68,7 +69,9 @@
 
     struct gpiod_line_settings *settings = gpiod_line_settings_new();
     if (!settings)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_settings_new error", num );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "GPIO%02d: gpiod_line_settings_new error: errno=%d (%s)", num, saved_errno, strerror(saved_errno) );
        return;
      }
 
@@ -78,7 +81,9 @@
 
     struct gpiod_line_config *line_cfg = gpiod_line_config_new();
     if (!line_cfg)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_config_new error", num );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "GPIO%02d: gpiod_line_config_new error: errno=%d (%s)", num, saved_errno, strerror(saved_errno) );
        Gpiod_release_line_resources ( NULL, NULL, settings );
        return;
      }
@@ -86,7 +91,9 @@
     unsigned int offset = num;
     gint ret = gpiod_line_config_add_line_settings ( line_cfg, &offset, 1, settings );
     if (ret)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_line_config_add_line_settings error", num );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "GPIO%02d: gpiod_line_config_add_line_settings error: errno=%d (%s)", num, saved_errno, strerror(saved_errno) );
        Gpiod_release_line_resources ( NULL, line_cfg, settings );
        return;
      }
@@ -96,7 +103,9 @@
 
     Agent_vars->lignes[num].gpio_ligne = gpiod_chip_request_lines ( Agent_vars->chip, req_cfg, line_cfg );
     if (!Agent_vars->lignes[num].gpio_ligne)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "GPIO%02d: gpiod_chip_request_lines error", num );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "GPIO%02d: gpiod_chip_request_lines error: errno=%d (%s)", num, saved_errno, strerror(saved_errno) );
        Gpiod_release_line_resources ( req_cfg, line_cfg, settings );
        return;
      }
@@ -158,14 +167,18 @@
 
     Agent_vars->chip = gpiod_chip_open ( "/dev/gpiochip0" );
     if (!Agent_vars->chip)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "Error while loading chip 'gpiochip0'" );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "Error while loading chip '/dev/gpiochip0': errno=%d (%s)", saved_errno, strerror(saved_errno) );
        Agent_end ( Agent );
      }
     else Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_NOTICE, "Chip 'gpiochip0' loaded" );
 
     struct gpiod_chip_info *info = gpiod_chip_get_info ( Agent_vars->chip );
     if (!info)
-     { Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR, "gpiod_chip_get_info failed" );
+     { gint saved_errno = errno;
+       Info( __func__, Agent_get_classe ( Agent ), Agent_get_tech_id ( Agent ), LOG_ERR,
+             "gpiod_chip_get_info failed: errno=%d (%s)", saved_errno, strerror(saved_errno) );
        Gpiod_cleanup();
        Agent_end ( Agent );
      }
